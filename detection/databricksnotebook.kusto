@@ -1,0 +1,65 @@
+//
+// scenario 1a: dbfs download shell
+//
+let scenario1a = (
+DatabricksNotebook
+| where ActionName == "runCommand"
+| project TimeGenerated, Identity, ActionName, MyJson = parse_json(RequestParams)
+| parse kind = regex flags = Ui MyJson.commandText with * 'base64.standard_b64decode."' base64notebook '"' *
+| extend type= "scenario 1a: dbfs data shell"
+| project type, TimeGenerated, Identity, ActionName, MyJson.executionTime, notebook_text=base64_decode_tostring(base64notebook), count_row=1
+| where (notebook_text contains "dbfs")
+);
+//
+// scenario 1b: dbfs download notebook
+//
+let scenario1b = (
+DatabricksNotebook
+| where ActionName == "runCommand"
+| project TimeGenerated, Identity, ActionName, MyJson = parse_json(RequestParams)
+| extend type= "scenario 1b: dbfs data notebook"
+| project type, TimeGenerated, Identity, ActionName, MyJson.executionTime, notebook_text=MyJson.commandText, count_row=1
+| where (notebook_text contains "dbfs")
+);
+//
+// scenario 2: large download
+//
+let scenario2 = (
+DatabricksNotebook 
+| where ActionName == "downloadPreviewResults" or ActionName == "downloadLargeResults"
+| project TimeGenerated, Identity, ActionName, MyJson = parse_json(RequestParams)
+| extend type= "scenario 2: large download"
+| project type, TimeGenerated, Identity, ActionName, MyJson.executionTime, notebook_text=MyJson.commandText, count_row=1
+);
+//
+// scenario 3a: print data screen shell
+//
+let scenario3a = (
+DatabricksNotebook
+| where ActionName == "runCommand"
+| project TimeGenerated, Identity, ActionName, MyJson = parse_json(RequestParams)
+| parse kind = regex flags = Ui MyJson.commandText with * 'base64.standard_b64decode."' base64notebook '"' *
+| project TimeGenerated, Identity, ActionName, MyJson.executionTime, notebook_text=base64_decode_tostring(base64notebook)
+| where (notebook_text contains "cat ")
+| summarize Count = count() by Identity, TimeGenerated=startofday(TimeGenerated)
+| extend type= "scenario 3a: print data screen shell"
+| project type, TimeGenerated=now(), Identity, ActionName = "runCommand", notebook_text="<<contains cat>>", count_row=Count
+| where count_row > 3
+);
+//
+// scenario 3b: print data screen notebook
+//
+let scenario3b = (
+DatabricksNotebook
+| where ActionName == "runCommand"
+| project TimeGenerated, Identity, ActionName, MyJson = parse_json(RequestParams)
+| where (MyJson.commandText contains "display" or MyJson.commandText contains "show" or MyJson.commandText contains "print")
+| summarize Count = count() by Identity, TimeGenerated=startofday(TimeGenerated)
+| extend type= "scenario 3b: print data screen notebook"
+| project type, TimeGenerated=now(), Identity, ActionName = "runCommand", notebook_text="<<contains display, show or print>>", count_row= Count
+| where count_row > 3
+);
+
+scenario1a 
+| union scenario1b, scenario2, scenario3a, scenario3b
+| order by TimeGenerated

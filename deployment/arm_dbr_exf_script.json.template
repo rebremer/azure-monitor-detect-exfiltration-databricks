@@ -1,0 +1,63 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "scheduledqueryrules_dbr_data_exfiltration_name": {
+            "defaultValue": "",
+            "type": "String"
+        },
+        "workspaces_test_storlogging_law_externalid": {
+            "defaultValue": "",
+            "type": "String"
+        },
+        "actionGroups_test_dbrdataexf_ag_externalid": {
+            "defaultValue": "",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "microsoft.insights/scheduledqueryrules",
+            "apiVersion": "2021-08-01",
+            "name": "[parameters('scheduledqueryrules_dbr_data_exfiltration_name')]",
+            "location": "westeurope",
+            "properties": {
+                "displayName": "[parameters('scheduledqueryrules_dbr_data_exfiltration_name')]",
+                "description": "[parameters('scheduledqueryrules_dbr_data_exfiltration_name')]",
+                "severity": 4,
+                "enabled": true,
+                "evaluationFrequency": "PT4H",
+                "scopes": [
+                    "[parameters('workspaces_test_storlogging_law_externalid')]"
+                ],
+                "targetResourceTypes": [
+                    "microsoft.operationalinsights/workspaces"
+                ],
+                "windowSize": "PT4H",
+                "criteria": {
+                    "allOf": [
+                        {
+                            "query": "{dbr_exf_script}",
+                            "timeAggregation": "Count",
+                            "dimensions": [],
+                            "operator": "GreaterThan",
+                            "threshold": 1,
+                            "failingPeriods": {
+                                "numberOfEvaluationPeriods": 1,
+                                "minFailingPeriodsToAlert": 1
+                            }
+                        }
+                    ]
+                },
+                "autoMitigate": false,
+                "actions": {
+                    "actionGroups": [
+                        "[parameters('actionGroups_test_dbrdataexf_ag_externalid')]"
+                    ],
+                    "customProperties": {}
+                }
+            }
+        }
+    ]
+}
