@@ -35,7 +35,7 @@ $arm_data = Get-Content "arm_dbr_exf_script.json.template" -Raw
 $arm_data = $arm_data -replace "{dbr_exf_script}", $kusto_script
 $arm_data | Out-File -encoding ASCII arm_dbr_exf_script.json
 
-# 5. Create Alert rule using ARM template
+# 6. Create Alert rule using ARM template
 #
 $law_id="/subscriptions/$SUB/resourcegroups/$LAW_RG/providers/microsoft.operationalinsights/workspaces/$LAW_NAME"
 az deployment group create --name AlertDeploymentv4 --resource-group $LAW_RG --template-file arm_dbr_exf_script.json --parameters scheduledqueryrules_dbr_data_exfiltration_name=$alert_rule_name actionGroups_test_dbrdataexf_ag_externalid=$action_id workspaces_test_storlogging_law_externalid=$law_id
